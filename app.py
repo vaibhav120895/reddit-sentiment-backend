@@ -7,54 +7,41 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Import analysis functions
 from reddit_client import fetch_reddit_posts
 from sentiment_analyzer import analyze_posts_multi_model
 
 # Load environment variables
-import os
-from pathlib import Path
-
-# Check if key.env exists (local development)
 if Path('key.env').exists():
     load_dotenv('key.env')
     print("📁 Loaded from key.env (local)")
 else:
-    # Production - load from system environment variables
     load_dotenv()
     print("🌐 Loaded from environment variables (production)")
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Enable CORS for your Lovable frontend
-from flask_cors import CORS, cross_origin
+# Enable CORS - Simple configuration that works
+CORS(app)
 
-CORS(app, 
-     origins=[
-         "https://develop-joyfully.lovable.app",
-         "https://*.lovable.app",
-         "http://localhost:5173",
-         "http://localhost:3000"
-     ],
-     allow_headers=["Content-Type", "Accept"],
-     methods=["GET", "POST", "OPTIONS"],
-     supports_credentials=False,
-     expose_headers=["Content-Type"])
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    return jsonify({
+        'status': 'healthy',
+        'claude_configured': bool(api_key and api_key.startswith('sk-ant-')),
+        'models': ['claude']
+    }), 200
+
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_sentiment():
     """
     Analyze Reddit posts for sentiment using Claude
-    
-    Request body:
-    {
-        "keywords": "artificial intelligence",
-        "subreddits": "artificial,MachineLearning",
-        "limit": 10,
-        "sort": "hot"
-    }
     """
     try:
         data = request.get_json()
@@ -88,7 +75,7 @@ def analyze_sentiment():
         
         print(f"✅ Fetched {len(all_posts)} total posts")
         
-        # Run sentiment analysis (Claude only)
+        # Run sentiment analysis
         analyzed_posts = analyze_posts_multi_model(all_posts)
         
         # Calculate stats
@@ -102,6 +89,8 @@ def analyze_sentiment():
         
     except Exception as e:
         print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -120,7 +109,7 @@ def calculate_stats(posts):
     
     return {
         'total_posts': total,
-        'avg_sentiment': round(sum(scores) / len(scores), 3),
+        'avg_sentiment': round(sum(scores) / len(scores), 3) if scores else 0,
         'positive_pct': round((positive / total) * 100, 1),
         'negative_pct': round((negative / total) * 100, 1),
         'neutral_pct': round((neutral / total) * 100, 1)
@@ -130,11 +119,12 @@ def calculate_stats(posts):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     print("\n" + "=" * 60)
-    print("🚀 Reddit Sentiment Analysis Backend (Claude-Only)")
+    print("🚀 Reddit Sentiment Analysis Backend")
     print("=" * 60)
     print(f"   Server: http://localhost:{port}")
-    print(f"   Frontend: https://develop-joyfully.lovable.app")
     print(f"   Model: Claude Sonnet 4")
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=port, debug=True)
+
+---
