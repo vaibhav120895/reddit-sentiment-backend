@@ -20,7 +20,15 @@ else:
     print("🌐 Loaded from environment variables (production)")
 
 app = Flask(__name__)
-CORS(app)
+
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Accept')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
 
 
 @app.route('/health', methods=['GET'])
@@ -33,8 +41,11 @@ def health_check():
     }), 200
 
 
-@app.route('/api/analyze', methods=['POST'])
+@app.route('/api/analyze', methods=['POST', 'OPTIONS'])
 def analyze_sentiment():
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
         data = request.get_json()
         keywords = data.get('keywords', 'AI')
