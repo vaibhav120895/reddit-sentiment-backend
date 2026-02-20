@@ -29,24 +29,19 @@ else:
 app = Flask(__name__)
 
 # Enable CORS for your Lovable frontend
-CORS(app, origins=[
-    "https://develop-joyfully.lovable.app",
-    "https://*.lovable.app",
-    "http://localhost:5173",  # Local development
-    "http://localhost:3000"
-])
+from flask_cors import CORS, cross_origin
 
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    api_key = os.getenv('ANTHROPIC_API_KEY')
-    return jsonify({
-        'status': 'healthy',
-        'claude_configured': bool(api_key and api_key.startswith('sk-ant-')),
-        'models': ['claude']
-    }), 200
-
+CORS(app, 
+     origins=[
+         "https://develop-joyfully.lovable.app",
+         "https://*.lovable.app",
+         "http://localhost:5173",
+         "http://localhost:3000"
+     ],
+     allow_headers=["Content-Type", "Accept"],
+     methods=["GET", "POST", "OPTIONS"],
+     supports_credentials=False,
+     expose_headers=["Content-Type"])
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_sentiment():
