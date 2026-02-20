@@ -1,6 +1,6 @@
 """
 Reddit Sentiment Analysis Backend
-Simple Flask API for your Lovable frontend
+Simple Flask API - Claude-only version
 """
 
 from flask import Flask, request, jsonify
@@ -11,8 +11,8 @@ from dotenv import load_dotenv
 # Import analysis functions
 from reddit_client import fetch_reddit_posts
 from sentiment_analyzer import analyze_posts_multi_model
+
 # Load environment variables
-# Try key.env for local development, fall back to system env vars for production
 import os
 from pathlib import Path
 
@@ -43,14 +43,15 @@ def health_check():
     api_key = os.getenv('ANTHROPIC_API_KEY')
     return jsonify({
         'status': 'healthy',
-        'claude_configured': bool(api_key and api_key.startswith('sk-ant-'))
+        'claude_configured': bool(api_key and api_key.startswith('sk-ant-')),
+        'models': ['claude']
     }), 200
 
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_sentiment():
     """
-    Analyze Reddit posts for sentiment
+    Analyze Reddit posts for sentiment using Claude
     
     Request body:
     {
@@ -62,9 +63,6 @@ def analyze_sentiment():
     """
     try:
         data = request.get_json()
-        
-        # ADD THIS LINE
-        print(f"📥 Received request: {data}")
         
         # Extract parameters
         keywords = data.get('keywords', 'AI')
@@ -95,7 +93,7 @@ def analyze_sentiment():
         
         print(f"✅ Fetched {len(all_posts)} total posts")
         
-        # Run sentiment analysis
+        # Run sentiment analysis (Claude only)
         analyzed_posts = analyze_posts_multi_model(all_posts)
         
         # Calculate stats
@@ -137,10 +135,11 @@ def calculate_stats(posts):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     print("\n" + "=" * 60)
-    print("🚀 Reddit Sentiment Analysis Backend")
+    print("🚀 Reddit Sentiment Analysis Backend (Claude-Only)")
     print("=" * 60)
     print(f"   Server: http://localhost:{port}")
     print(f"   Frontend: https://develop-joyfully.lovable.app")
+    print(f"   Model: Claude Sonnet 4")
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=port, debug=True)
