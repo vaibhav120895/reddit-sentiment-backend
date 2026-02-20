@@ -1,30 +1,41 @@
 """
 Multi-Model Sentiment Analyzer
-VADER + RoBERTa + Claude (from your notebook)
+VADER + RoBERTa + Claude (optimized for low memory)
 """
 
 import os
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
 from anthropic import Anthropic
 
-# Initialize models (load once)
-print("🔄 Loading sentiment models...")
-
-# VADER
+# Initialize only VADER at startup (lightweight - only ~10MB)
+print("🔄 Loading VADER model...")
 vader_analyzer = SentimentIntensityAnalyzer()
+print("✅ VADER loaded\n")
 
-# RoBERTa
-MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-roberta_model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+# RoBERTa will be loaded on first use (lazy loading to save memory)
+_roberta_model = None
+_roberta_tokenizer = None
 
-print("✅ Models loaded\n")
+
+def get_roberta_model():
+    """Lazy load RoBERTa model only when first API request comes in"""
+    global _roberta_model, _roberta_tokenizer
+    
+    if _roberta_model is None:
+        print("🔄 Loading RoBERTa model (first use - may take 1-2 minutes)...")
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+        import torch
+        
+        MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+        _roberta_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        _roberta_model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+        print("✅ RoBERTa loaded and ready")
+    
+    return _roberta_model, _roberta_tokenizer
 
 
 def analyze_with_vader(text):
-    """Traditional sentiment analysis with VADER"""
+    """Traditional sentiment analysis with VADER (rule-based, fast)"""
     scores = vader_analyzer.polarity_scores(text)
     compound = scores['compound']
     
@@ -39,16 +50,24 @@ def analyze_with_vader(text):
 
 
 def analyze_with_roberta(text):
-    """Transformer-based sentiment analysis"""
+    """Transformer-based sentiment analysis (deep learning)"""
+    import torch
+    
+    # Lazy load the model (only loads once, on first use)
+    model, tokenizer = get_roberta_model()
+    
     # Truncate to model max length
     text = text[:512]
     
+    # Tokenize input
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
     
+    # Run inference (no gradient calculation needed for inference)
     with torch.no_grad():
-        outputs = roberta_model(**inputs)
+        outputs = model(**inputs)
         predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
     
+    # Get sentiment scores
     scores = predictions[0].tolist()
     labels = ['Negative', 'Neutral', 'Positive']
     sentiment = labels[scores.index(max(scores))]
@@ -64,7 +83,7 @@ def analyze_with_roberta(text):
 
 
 def analyze_with_claude(text, emoji_count=0):
-    """Advanced sentiment analysis with Claude"""
+    """Advanced sentiment analysis with Claude API (no local model needed)"""
     api_key = os.getenv('ANTHROPIC_API_KEY')
     
     if not api_key:
@@ -75,8 +94,10 @@ def analyze_with_claude(text, emoji_count=0):
         }
     
     try:
+        # Initialize Claude client (lightweight - just HTTP client)
         client = Anthropic(api_key=api_key)
         
+        # Create prompt
         prompt = f"""Analyze the sentiment of this Reddit post. Consider both words and emojis.
 
 Text: {text}
@@ -93,6 +114,7 @@ SENTIMENT: [classification]
 SCORE: [number]
 EXPLANATION: [reason]"""
         
+        # Call Claude API (runs on Anthropic's servers, not yours)
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=300,
@@ -143,8 +165,8 @@ def analyze_posts_multi_model(posts):
         
         # Run all three models
         vader = analyze_with_vader(text)
-        roberta = analyze_with_roberta(text)
-        claude = analyze_with_claude(text, emoji_count)
+        roberta = analyze_with_roberta(text)  # Lazy loads on first call
+        claude = analyze_with_claude(text, emoji_count)  # API call
         
         # Add results to post
         post['traditional_sentiment'] = vader['sentiment']
@@ -157,6 +179,7 @@ def analyze_posts_multi_model(posts):
         post['claude_score'] = claude['score']
         post['claude_explanation'] = claude.get('explanation', '')
         
+        # Show progress
         if i % 5 == 0 or i == len(posts):
             print(f"   Progress: {i}/{len(posts)} posts analyzed")
     
