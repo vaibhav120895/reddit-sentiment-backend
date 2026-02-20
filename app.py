@@ -9,11 +9,9 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Import analysis functions
 from reddit_client import fetch_reddit_posts
 from sentiment_analyzer import analyze_posts_multi_model
 
-# Load environment variables
 if Path('key.env').exists():
     load_dotenv('key.env')
     print("📁 Loaded from key.env (local)")
@@ -21,15 +19,12 @@ else:
     load_dotenv()
     print("🌐 Loaded from environment variables (production)")
 
-# Initialize Flask app
 app = Flask(__name__)
-
-# Enable CORS - Simple configuration that works
 CORS(app)
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
     api_key = os.getenv('ANTHROPIC_API_KEY')
     return jsonify({
         'status': 'healthy',
@@ -40,23 +35,16 @@ def health_check():
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_sentiment():
-    """
-    Analyze Reddit posts for sentiment using Claude
-    """
     try:
         data = request.get_json()
-        
-        # Extract parameters
         keywords = data.get('keywords', 'AI')
         subreddits_str = data.get('subreddits', 'artificial')
         limit = int(data.get('limit', 10))
         sort = data.get('sort', 'hot')
         
-        # Validate
         if limit < 1 or limit > 50:
             return jsonify({'error': 'Limit must be between 1 and 50'}), 400
         
-        # Parse subreddits
         subreddits = [s.strip() for s in subreddits_str.split(',') if s.strip()]
         
         print(f"\n📊 Analysis Request:")
@@ -64,7 +52,6 @@ def analyze_sentiment():
         print(f"   Subreddits: {subreddits}")
         print(f"   Limit: {limit} per subreddit")
         
-        # Fetch Reddit posts
         all_posts = []
         for subreddit in subreddits:
             posts = fetch_reddit_posts(subreddit, sort, limit)
@@ -75,10 +62,7 @@ def analyze_sentiment():
         
         print(f"✅ Fetched {len(all_posts)} total posts")
         
-        # Run sentiment analysis
         analyzed_posts = analyze_posts_multi_model(all_posts)
-        
-        # Calculate stats
         stats = calculate_stats(analyzed_posts)
         
         return jsonify({
@@ -95,7 +79,6 @@ def analyze_sentiment():
 
 
 def calculate_stats(posts):
-    """Calculate aggregate statistics"""
     if not posts:
         return {}
     
@@ -126,5 +109,3 @@ if __name__ == '__main__':
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=port, debug=True)
-
----
