@@ -57,7 +57,7 @@ def analyze_sentiment():
         limit = int(data.get('limit', 5))
         sort = data.get('sort', 'hot')
         
-        if limit < 1 or limit > 10:
+        if limit < 1 or limit > 50:
             return jsonify({'error': 'Limit must be between 1 and 10'}), 400
         
         print(f"\n📊 Analysis Request:")
