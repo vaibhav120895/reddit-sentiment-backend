@@ -1,8 +1,37 @@
-Flask==3.0.0
-Flask-CORS==4.0.0
-praw==7.7.1
-anthropic>=0.8.0
-python-dotenv==1.0.0
-gunicorn==21.2.0
-emoji==2.9.0
-requests>=2.31.0
+# ============================================================================
+# REDDBEAT AI - SECURE PRODUCTION DEPENDENCIES
+# ============================================================================
+
+# Core Flask Framework
+Flask==3.0.2
+Werkzeug==3.0.1
+
+# Security Dependencies
+# ----------------------
+flask-limiter==3.5.1      # Rate limiting (DDoS protection)
+flask-talisman==1.1.0     # Security headers (CSP, HSTS, etc.)
+python-dotenv==1.0.1      # Environment variable management
+
+# API & HTTP
+# ----------
+requests==2.31.0          # HTTP library with security patches
+urllib3==2.2.0            # Updated for security
+
+# AI/ML Dependencies
+# ------------------
+anthropic==0.18.1         # Claude AI API
+
+# Production Server
+# -----------------
+gunicorn==21.2.0          # Production WSGI server
+gevent==24.2.1            # Async worker for Gunicorn
+
+# Data Processing (if needed)
+# ---------------------------
+# textblob==0.17.1
+# transformers==4.36.2
+
+# Monitoring (optional but recommended)
+# -------------------------------------
+# sentry-sdk==1.40.0      # Error tracking
+
