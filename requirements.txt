@@ -1,10 +1,10 @@
 Flask==3.0.2
 Werkzeug==3.0.1
-flask-limiter==3.5.1
-flask-talisman==1.1.0
+flask-limiter==3.5.1      # NEW (for security)
+flask-talisman==1.1.0     # NEW (for security)
 python-dotenv==1.0.1
 requests==2.31.0
 urllib3==2.2.0
 anthropic==0.18.1
 gunicorn==21.2.0
-emoji==2.10.1              # ← This was missing!
+emoji==2.10.1
