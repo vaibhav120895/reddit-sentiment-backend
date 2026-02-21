@@ -61,7 +61,7 @@ def analyze_sentiment():
             return jsonify({'error': 'Limit must be between 1 and 10'}), 400
         
         print(f"\n📊 Analysis Request:")
-        print(f"   Query: {keywords}")
+        print(f"   Query: '{keywords}'")
         print(f"   Limit: {limit} posts")
         print(f"   Sort: {sort}")
         
@@ -70,7 +70,7 @@ def analyze_sentiment():
         if not all_posts:
             return jsonify({'error': 'No posts found'}), 404
         
-        print(f"✅ Fetched {len(all_posts)} total posts")
+        print(f"✅ Fetched {len(all_posts)} posts")
         
         analyzed_posts = analyze_posts_multi_model(all_posts)
         stats = calculate_stats(analyzed_posts)
@@ -119,28 +119,3 @@ if __name__ == '__main__':
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=port, debug=True)
-```
-
----
-
-## 📝 Prompt for Lovable
-```
-Remove the subreddit field and simplify to global Reddit search:
-
-1. Remove any hardcoded subreddit values ("artificial,MachineLearning,ChatGPT")
-
-2. Update the API call to send only:
-{
-  "keywords": searchTerm,
-  "limit": postsPerSubreddit,
-  "sort": sortOption
-}
-
-Do NOT send "subreddits" parameter at all.
-
-3. Update the UI labels:
-   - Change "Search Term" to "Search Reddit"
-   - Change "Posts per Subreddit" to "Number of Posts" or "Post Limit"
-   - Keep Sort and limit fields
-
-The backend now searches across all of Reddit automatically.
