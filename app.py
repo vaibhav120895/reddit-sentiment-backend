@@ -4,7 +4,6 @@ Simple Flask API - Claude-only version
 """
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from pathlib import Path
@@ -21,17 +20,26 @@ else:
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
+        return response, 200
+
 
 @app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Accept')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
     return response
 
 
-@app.route('/health', methods=['GET'])
+@app.route('/health', methods=['GET', 'OPTIONS'])
 def health_check():
     api_key = os.getenv('ANTHROPIC_API_KEY')
     return jsonify({
@@ -43,30 +51,21 @@ def health_check():
 
 @app.route('/api/analyze', methods=['POST', 'OPTIONS'])
 def analyze_sentiment():
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         data = request.get_json()
         keywords = data.get('keywords', 'AI')
-        subreddits_str = data.get('subreddits', 'artificial')
-        limit = int(data.get('limit', 10))
+        limit = int(data.get('limit', 5))
         sort = data.get('sort', 'hot')
         
-        if limit < 1 or limit > 50:
-            return jsonify({'error': 'Limit must be between 1 and 50'}), 400
-        
-        subreddits = [s.strip() for s in subreddits_str.split(',') if s.strip()]
+        if limit < 1 or limit > 10:
+            return jsonify({'error': 'Limit must be between 1 and 10'}), 400
         
         print(f"\n📊 Analysis Request:")
-        print(f"   Keywords: {keywords}")
-        print(f"   Subreddits: {subreddits}")
-        print(f"   Limit: {limit} per subreddit")
+        print(f"   Query: {keywords}")
+        print(f"   Limit: {limit} posts")
+        print(f"   Sort: {sort}")
         
-        all_posts = []
-        for subreddit in subreddits:
-            posts = fetch_reddit_posts(subreddit, sort, limit)
-            all_posts.extend(posts)
+        all_posts = fetch_reddit_posts(keywords, sort, limit)
         
         if not all_posts:
             return jsonify({'error': 'No posts found'}), 404
@@ -120,3 +119,28 @@ if __name__ == '__main__':
     print("=" * 60 + "\n")
     
     app.run(host='0.0.0.0', port=port, debug=True)
+```
+
+---
+
+## 📝 Prompt for Lovable
+```
+Remove the subreddit field and simplify to global Reddit search:
+
+1. Remove any hardcoded subreddit values ("artificial,MachineLearning,ChatGPT")
+
+2. Update the API call to send only:
+{
+  "keywords": searchTerm,
+  "limit": postsPerSubreddit,
+  "sort": sortOption
+}
+
+Do NOT send "subreddits" parameter at all.
+
+3. Update the UI labels:
+   - Change "Search Term" to "Search Reddit"
+   - Change "Posts per Subreddit" to "Number of Posts" or "Post Limit"
+   - Keep Sort and limit fields
+
+The backend now searches across all of Reddit automatically.
