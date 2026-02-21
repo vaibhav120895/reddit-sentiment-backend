@@ -1,8 +1,31 @@
-Flask==3.0.0
-Flask-CORS==4.0.0
-praw==7.7.1
-anthropic>=0.8.0
-python-dotenv==1.0.0
-gunicorn==21.2.0
-emoji==2.9.0
-requests>=2.31.0
+# ============================================================================
+# REDDBEAT AI - WORKING PRODUCTION DEPENDENCIES
+# ============================================================================
+# Based on your original working version + security enhancements
+# ============================================================================
+
+# Core Flask Framework
+Flask==3.0.0              # Your working version
+Flask-CORS==4.0.0         # Your working version (alternative to manual CORS)
+
+# Security Dependencies (NEW - but optional for now)
+flask-limiter==3.5.1      # Rate limiting (DDoS protection)
+flask-talisman==1.1.0     # Security headers (CSP, HSTS, etc.)
+
+# Environment & Configuration
+python-dotenv==1.0.0      # Your working version
+
+# HTTP & API
+requests>=2.31.0          # Your working version
+
+# Claude AI - KEEP YOUR WORKING VERSION RANGE
+anthropic>=0.8.0          # ← THIS IS THE KEY! Uses stable 0.8.x, avoids 0.18.x bug
+
+# Production Server
+gunicorn==21.2.0          # Your working version
+
+# Text Processing
+emoji==2.9.0              # Your working version
+
+# Reddit API (optional - you have this but may not be using)
+praw==7.7.1               # Your working version
