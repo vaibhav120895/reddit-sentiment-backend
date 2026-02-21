@@ -1,8 +1,12 @@
+# ============================================================================
+# REDDBEAT AI - PRODUCTION DEPENDENCIES (Python 3.14 Compatible)
+# ============================================================================
+
 # Core Flask
 Flask==3.0.2
 Werkzeug==3.0.1
 
-# Security (NEW - REQUIRED)
+# Security
 flask-limiter==3.5.1
 flask-talisman==1.1.0
 python-dotenv==1.0.1
@@ -16,4 +20,3 @@ anthropic==0.18.1
 
 # Production Server
 gunicorn==21.2.0
-gevent==24.2.1
