@@ -1,6 +1,6 @@
 """
 Claude-Only Sentiment Analyzer
-Optimized for minimal memory usage
+Optimized for minimal memory usage + Overall Summary Feature
 """
 
 import os
@@ -76,6 +76,104 @@ EXPLANATION: [reason]"""
             'sentiment': 'Neutral',
             'score': 0.0,
             'explanation': f'Error: {str(e)}'
+        }
+
+
+def generate_overall_summary(posts, query):
+    """
+    NEW FEATURE: Generate an overall summary of what people are thinking about a topic
+    
+    Args:
+        posts: List of analyzed posts
+        query: The search query/topic
+    
+    Returns:
+        Dictionary with summary insights
+    """
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    
+    if not api_key or not posts:
+        return {
+            'summary': 'Unable to generate summary',
+            'key_themes': [],
+            'overall_sentiment': 'Neutral',
+            'consensus': 'Not enough data'
+        }
+    
+    try:
+        # Collect all post titles and sentiments
+        posts_text = []
+        for i, post in enumerate(posts[:15], 1):  # Limit to first 15 posts to avoid token limits
+            title = post.get('title', 'Untitled')
+            sentiment = post.get('claude_sentiment', 'Neutral')
+            score = post.get('claude_score', 0)
+            posts_text.append(f"{i}. [{sentiment} {score}] {title}")
+        
+        combined_posts = "\n".join(posts_text)
+        
+        client = Anthropic(api_key=api_key)
+        
+        prompt = f"""You are analyzing Reddit discussions about: "{query}"
+
+Here are the post titles with their sentiment scores:
+
+{combined_posts}
+
+Based on these posts, provide:
+
+1. SUMMARY: A 2-3 sentence overview of what people are thinking/discussing about this topic
+2. KEY_THEMES: List 3-5 main themes or topics people are discussing (comma-separated)
+3. OVERALL_SENTIMENT: Overall sentiment (Positive, Negative, Mixed, or Neutral)
+4. CONSENSUS: Is there agreement or disagreement? (Strong Agreement, Mostly Agreement, Mixed Views, Strong Disagreement, or Polarized)
+
+Format your response EXACTLY as:
+SUMMARY: [your 2-3 sentence summary]
+KEY_THEMES: [theme1, theme2, theme3, ...]
+OVERALL_SENTIMENT: [sentiment]
+CONSENSUS: [consensus level]"""
+        
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        response = message.content[0].text
+        
+        # Parse response
+        summary = ''
+        key_themes = []
+        overall_sentiment = 'Neutral'
+        consensus = 'Mixed Views'
+        
+        for line in response.split('\n'):
+            line = line.strip()
+            if line.startswith('SUMMARY:'):
+                summary = line.split(':', 1)[1].strip()
+            elif line.startswith('KEY_THEMES:'):
+                themes_text = line.split(':', 1)[1].strip()
+                key_themes = [theme.strip() for theme in themes_text.split(',')]
+            elif line.startswith('OVERALL_SENTIMENT:'):
+                overall_sentiment = line.split(':', 1)[1].strip()
+            elif line.startswith('CONSENSUS:'):
+                consensus = line.split(':', 1)[1].strip()
+        
+        print(f"✅ Generated overall summary for '{query}'\n")
+        
+        return {
+            'summary': summary,
+            'key_themes': key_themes,
+            'overall_sentiment': overall_sentiment,
+            'consensus': consensus
+        }
+        
+    except Exception as e:
+        print(f"   ⚠️  Summary generation error: {str(e)}")
+        return {
+            'summary': f'Error generating summary: {str(e)}',
+            'key_themes': [],
+            'overall_sentiment': 'Unknown',
+            'consensus': 'Unable to determine'
         }
 
 
