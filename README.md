@@ -2,7 +2,7 @@
 
 Simple Flask API backend for your Lovable frontend at https://develop-joyfully.lovable.app/
 
-Analyzes Reddit posts using 3 AI models: VADER, RoBERTa, and Claude.
+Analyzes Reddit posts using Claude AI for a detailed Sentiment Analysis
 
 ## 🚀 Quick Start
 
